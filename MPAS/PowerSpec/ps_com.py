@@ -13,7 +13,7 @@ import SignalProcess as sp
 # =============== # 
 # function
 def load_data(path):
-    with open(f"{path}q1pc_q1eof.pkl", "rb") as f:
+    with open(f"{path}pc_q1eof.pkl", "rb") as f:
         pc_dict = pkl.load(f)
     
     return pc_dict

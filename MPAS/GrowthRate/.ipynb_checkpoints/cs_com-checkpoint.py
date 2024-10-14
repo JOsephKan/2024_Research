@@ -12,7 +12,7 @@ import SignalProcess as sp
 
 # =============== # 
 # load data
-case = 'CNTL'
+case = 'NCRF'
 var_list = ["q1pc1", "q1pc2", "tpc1", "tpc2"]
 
 path = "/work/b11209013/MPAS/PC/"
@@ -36,7 +36,10 @@ with open(f"{path}{case}/pc_q1eof.pkl", "rb") as f:
     data_dict["tpc1"] = data["tpc"][0][:, lat_lim, :]
     data_dict["tpc2"] = data["tpc"][1][:, lat_lim, :]
 
-data_dict = {key: data_dict[key] - data_dict[key].mean() for key in data_dict}
+data_dict = {
+    key: data_dict[key] - np.mean(data_dict[key], axis=0, keepdims=True)
+    for key in data_dict
+}
 
 # ================= #   
 # process data
@@ -64,11 +67,11 @@ ft = sp.Fourier()
 
 TT = {
     "pc1": np.array([
-        ft.PowerSpectrum(sym_split["tpc1"][i]).real
+        ft.CrossSpectrum(sym_split["tpc1"][i], sym_split["tpc1"][i]).real
         for i in range(4)
     ]).mean(axis=0),
     "pc2": np.array([
-        ft.PowerSpectrum(sym_split["tpc2"][i]).real
+        ft.CrossSpectrum(sym_split["tpc2"][i], sym_split["tpc2"][i]).real
         for i in range(4)
     ]).mean(axis=0),
 }
@@ -103,7 +106,7 @@ e_cond = np.squeeze(np.where(wn_ana[3, 0, :] <= 0))
 
 fig, ax = plt.subplots(1, 2, figsize=(17, 7))
 
-cf_1 = ax[0].contourf(wnm, frm, (sigma["pc1"]), cmap="RdBu_r", levels=np.linspace(-10, 10), extend="both")
+cf_1 = ax[0].contourf(wnm, frm, (sigma["pc1"]), cmap="RdBu_r", levels=np.linspace(-10, 10, 11), extend="both")
 ax[0].plot(wn_ana[4, 0, :], fr_ana[4, 0, :], "k")
 ax[0].plot(wn_ana[4, 1, :], fr_ana[4, 1, :], "k")
 ax[0].plot(wn_ana[4, 2, :], fr_ana[4, 2, :], "k")
@@ -112,7 +115,7 @@ ax[0].set_xlim(-15, 15)
 ax[0].set_ylim(0, 1/2)
 plt.colorbar(cf_1, ax=ax[0])
 
-cf_2 = ax[1].contourf(wnm, frm, (sigma["pc2"]), cmap="RdBu_r", levels=np.linspace(-10, 10), extend="both")
+cf_2 = ax[1].contourf(wnm, frm, (sigma["pc2"]), cmap="RdBu_r", levels=np.linspace(-5, 5, 11), extend="both")
 ax[1].plot(wn_ana[4, 0, :], fr_ana[4, 0, :], "k")
 ax[1].plot(wn_ana[4, 1, :], fr_ana[4, 1, :], "k")
 ax[1].plot(wn_ana[4, 2, :], fr_ana[4, 2, :], "k")
