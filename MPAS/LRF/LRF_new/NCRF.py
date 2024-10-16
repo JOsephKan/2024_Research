@@ -120,6 +120,10 @@ lw_lrf = NormEqu(data_itp["rtratenlw"], state_vec)
 sw_lrf = NormEqu(data_itp["rtratensw"], state_vec)
 cu_lrf = NormEqu(conv_tend, state_vec)
 
+lw_lrf[:, 19:23] = np.nan
+sw_lrf[:, 19:23] = np.nan
+cu_lrf[:, 19:23] = np.nan
+
 lrf_dict = {
     "lev"   : lev_itp,
     "lw_lrf": lw_lrf,
@@ -127,11 +131,12 @@ lrf_dict = {
     "cu_lrf": cu_lrf
 }
 
+
 # ================= #
 # save as pkl
 joblib.dump(lrf_dict, f"/home/b11209013/2024_Research/MPAS/LRF/LRF_new/LRF_file/lrf_{case}.pkl")
 
-# ================= #
+# ================== #
 # plot out linear response function
 plt.rcParams.update({
     'font.size': 12,
@@ -153,7 +158,7 @@ plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Longwave Heating from Temperature')
+plt.title(case+r" $\frac{dT}{dt})_{LW}$ from Temperature")
 plt.colorbar(orientation='horizontal', label='[(K/day) / (K) ]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}lw_t_t.png', dpi=500)
 plt.show()
@@ -167,63 +172,63 @@ plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Longwave Heating from Moisture')
+plt.title(case+r' $\frac{dT}{dt})_{LW}$ from Moisture')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (g/kg)]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}lw_t_q.png', dpi=500)
 plt.show()
 plt.close()
 
 plt.figure(figsize=(8, 7))
-plt.pcolormesh(lev_itp, lev_itp, sw_lrf[:, :19], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
+plt.pcolormesh(lev_itp, lev_itp, sw_lrf[:, :19], cmap="RdBu_r", vmin=-3, vmax=3)
 plt.xticks(np.linspace(100, 1000, 10))
 plt.yticks(np.linspace(100, 1000, 10))
 plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Shortwave Heating from Temperature')
+plt.title(case+r' $\frac{dT}{dt})_{SW}$ from Temperature')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (K) ]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}sw_t_t.png', dpi=500)
 plt.show()
 plt.close()
 
 plt.figure(figsize=(8, 7))
-plt.pcolormesh(lev_itp, lev_itp, sw_lrf[:, 19:], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
+plt.pcolormesh(lev_itp, lev_itp, sw_lrf[:, 19:], cmap="RdBu_r", vmin=-3, vmax=3)
 plt.xticks(np.linspace(100, 1000, 10))
 plt.yticks(np.linspace(100, 1000, 10))
 plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Shortwave Heating from Moisture')
+plt.title(case+r' $\frac{dT}{dt})_{SW}$ from Moisture')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (g/kg)]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}sw_t_q.png', dpi=500)
 plt.show()
 plt.close()
 
 plt.figure(figsize=(8, 7))
-plt.pcolormesh(lev_itp, lev_itp, cu_lrf[:19, :19], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
+plt.pcolormesh(lev_itp, lev_itp, cu_lrf[:19, :19], cmap="RdBu_r", vmin=-5, vmax=5)
 plt.xticks(np.linspace(100, 1000, 10))
 plt.yticks(np.linspace(100, 1000, 10))
 plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Cumulus Heating from Temperature')
+plt.title(case+r' $\frac{dT}{dt})_{CU}$ from Temperature')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (K) ]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}cu_t_t.png', dpi=500)
 plt.show()
 plt.close()
 
 plt.figure(figsize=(8, 7))
-plt.pcolormesh(lev_itp, lev_itp, cu_lrf[:19, 19:], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
+plt.pcolormesh(lev_itp, lev_itp, cu_lrf[:19, 19:], cmap="RdBu_r", vmin=-5, vmax=5)
 plt.xticks(np.linspace(100, 1000, 10))
 plt.yticks(np.linspace(100, 1000, 10))
 plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Cumulus Heating from Moisture')
+plt.title(case+r' $\frac{dT}{dt}_{CU}$ from Moisture')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (g/kg)]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}cu_t_q.png', dpi=500)
 plt.show()
@@ -237,21 +242,21 @@ plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Cumulus Moistening from Temperature')
+plt.title(case+r' $\frac{dq}{dt}_{CU}$ from Temperature')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (K) ]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}cu_q_t.png', dpi=500)
 plt.show()
 plt.close()
 
 plt.figure(figsize=(8, 7))
-plt.pcolormesh(lev_itp, lev_itp, cu_lrf[19:, 19:], cmap="RdBu_r", vmin=-2.5, vmax=2.5)
+plt.pcolormesh(lev_itp, lev_itp, cu_lrf[19:, 19:], cmap="RdBu_r", vmin=-5, vmax=5)
 plt.xticks(np.linspace(100, 1000, 10))
 plt.yticks(np.linspace(100, 1000, 10))
 plt.xlim(1000, 100)
 plt.ylim(1000, 100)
 plt.xlabel('State Vecter Level (hPa)')
 plt.ylabel('Tendency Level (hPa)')
-plt.title(f'{case} Cumulus Moistening from Moisture')
+plt.title(case+r' $\frac{dq}{dt})_{CU}$ from Moisture')
 plt.colorbar(orientation='horizontal', label='[(K/day) / (g/kg)]', aspect=50, shrink=0.8)
 plt.savefig(f'{image_path}cu_q_q.png', dpi=500)
 plt.show()
