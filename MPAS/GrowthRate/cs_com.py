@@ -2,7 +2,7 @@
 # import package
 import sys
 import numpy as np
-import pickle as pkl
+import netCDF4 as nc
 from matplotlib import pyplot as plt
 
 sys.path.append("/home/b11209013/Package/")
@@ -15,30 +15,21 @@ import SignalProcess as sp
 case = 'NSC'
 var_list = ["q1pc1", "q1pc2", "tpc1", "tpc2"]
 
-path = "/work/b11209013/MPAS/PC/"
+fname = f"/home/b11209013/2024_Research/MPAS/GrowthRate/PCA_file/{case}_PC.nc"
 
 data_dict = {}
 
-with open(f"{path}{case}/pc_q1eof.pkl", "rb") as f:
-    data = pkl.load(f)
-    lon = data["lon"]
-    lat = data["lat"]
-    time = data["time"]
+with nc.Dataset(fname, 'r') as data:
+    lon  = data["lon"][:]
+    lat  = data["lat"][:]
+    time = data["time"][:] 
 
-lat_lim = np.where((lat >= -5) & (lat <= 5))[0]
-lat = lat[lat_lim]
-
-
-with open(f"{path}{case}/pc_q1eof.pkl", "rb") as f:
-    data = pkl.load(f)
-    data_dict["q1pc1"] = data["q1pc"][0][:, lat_lim, :]
-    data_dict["q1pc2"] = data["q1pc"][1][:, lat_lim, :]
-    data_dict["tpc1"] = data["tpc"][0][:, lat_lim, :]
-    data_dict["tpc2"] = data["tpc"][1][:, lat_lim, :]
+    for var in var_list:
+        data_dict[var] = data[var][:]
 
 data_dict = {
     key: data_dict[key] - np.mean(data_dict[key], axis=0, keepdims=True)
-    for key in data_dict
+    for key in var_list
 }
 
 # ================= #   
@@ -106,7 +97,7 @@ e_cond = np.squeeze(np.where(wn_ana[3, 0, :] <= 0))
 
 fig, ax = plt.subplots(1, 2, figsize=(17, 7))
 
-cf_1 = ax[0].contourf(wnm, frm, (sigma["pc1"]), cmap="RdBu_r", levels=np.linspace(-10, 10, 11), extend="both")
+cf_1 = ax[0].contourf(wnm, frm, (sigma["pc1"]), cmap="coolwarm", levels=np.linspace(-10, 10, 11), extend="both")
 ax[0].plot(wn_ana[4, 0, :], fr_ana[4, 0, :], "k")
 ax[0].plot(wn_ana[4, 1, :], fr_ana[4, 1, :], "k")
 ax[0].plot(wn_ana[4, 2, :], fr_ana[4, 2, :], "k")
@@ -121,7 +112,7 @@ ax[0].set_title("PC1")
 
 plt.colorbar(cf_1, ax=ax[0])
 
-cf_2 = ax[1].contourf(wnm, frm, (sigma["pc2"]), cmap="RdBu_r", levels=np.linspace(-5, 5, 11), extend="both")
+cf_2 = ax[1].contourf(wnm, frm, (sigma["pc2"]), cmap="coolwarm", levels=np.linspace(-5, 5, 11), extend="both")
 ax[1].plot(wn_ana[4, 0, :], fr_ana[4, 0, :], "k")
 ax[1].plot(wn_ana[4, 1, :], fr_ana[4, 1, :], "k")
 ax[1].plot(wn_ana[4, 2, :], fr_ana[4, 2, :], "k")
