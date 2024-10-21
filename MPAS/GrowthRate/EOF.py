@@ -32,7 +32,7 @@ q1_rs = q1_pm.reshape((llev, -1))
 
 # ====================== # 
 # interpolate
-lev_itp = np.linspace(100, 1000, 19)
+lev_itp = np.linspace(150, 1000, 18)
 
 q1_itp = interp1d(lev[::-1], q1_rs[::-1], axis=0)(lev_itp)
 

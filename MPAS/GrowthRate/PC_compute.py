@@ -19,7 +19,7 @@ def normal_equation(eof: np.ndarray, data:np.ndarray) -> np.ndarray:
 # load data
 case = 'CNTL'
 
-with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/theta.nc', 'r') as f:
+with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/theta.nc', 'r', mmap=True) as f:
     lon  = f.variables['lon'][:]
     lat  = f.variables['lat'][:]
     lev  = f.variables['lev'][:]
@@ -32,10 +32,13 @@ with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/theta.nc', 'r') as f:
 
 ltime, llev, llat, llon = theta.shape
 
-with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/q1.nc', 'r') as f:
+with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/q1.nc', 'r', mmap=True) as f:
     q1 = f.variables['q1'][:, :, lat_lim, :]*86400/1004.5
 
-q1_eof = np.loadtxt('/home/b11209013/2024_Research/MPAS/LRF/LRF_new/PCA_file/CNTL_EOF.txt')
+with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/qv.nc', 'r', mmap=True) as f:
+    qv = f.variables['qv'][:, :, lat_lim, :]*1000
+
+q1_eof = np.loadtxt('/home/b11209013/2024_Research/MPAS/GrowthRate/PCA_file/CNTL_EOF.txt')
 
 eof1 = np.matrix(q1_eof[:, 0]).T
 eof2 = np.matrix(q1_eof[:, 1]).T
@@ -46,25 +49,32 @@ t = theta * (1000/lev[None, :, None, None])**(-0.286)
 
 # ====================== #
 # permute and reshape
-t_pm = t.transpose((1, 0, 2, 3))
+t_pm  = t.transpose((1, 0, 2, 3))
+qv_pm = qv.transpose((1, 0, 2, 3))
 q1_pm = q1.transpose((1, 0, 2, 3))
 
 t_rs = t_pm.reshape((llev, -1))
+qv_rs = qv_pm.reshape((llev, -1))
 q1_rs = q1_pm.reshape((llev, -1))
 
 # ====================== #
 # interpolate
-lev_itp = np.linspace(100, 1000, 19)
+lev_itp = np.linspace(150, 1000, 18)
 
 t_itp = interp1d(lev[::-1], t_rs[::-1], kind="linear", axis=0)(lev_itp)
+qv_itp = interp1d(lev[::-1], qv_rs[::-1], kind="linear", axis=0)(lev_itp)
 q1_itp = interp1d(lev[::-1], q1_rs[::-1], kind="linear", axis=0)(lev_itp)
+
 # ====================== #
 # compute PC of q1 and EOF
 t_itp = t_itp - t_itp.mean()
+qv_itp = qv_itp - qv_itp.mean()
 q1_itp = q1_itp - q1_itp.mean()
 
 tpc1  = normal_equation(eof1, t_itp)
 tpc2  = normal_equation(eof2, t_itp)
+qvpc1 = normal_equation(eof1, qv_itp)
+qvpc2 = normal_equation(eof2, qv_itp)
 q1pc1 = normal_equation(eof1, q1_itp)
 q1pc2 = normal_equation(eof2, q1_itp)
 
@@ -72,12 +82,14 @@ q1pc2 = normal_equation(eof2, q1_itp)
 # reshape PC
 tpc1  = tpc1.reshape((ltime, llat, llon))
 tpc2  = tpc2.reshape((ltime, llat, llon))
+qvpc1 = qvpc1.reshape((ltime, llat, llon))
+qvpc2 = qvpc2.reshape((ltime, llat, llon))
 q1pc1 = q1pc1.reshape((ltime, llat, llon))
 q1pc2 = q1pc2.reshape((ltime, llat, llon))
 
 # ======================= #
 # save nc file
-with nc.Dataset(f'/home/b11209013/2024_Research/MPAS/LRF/LRF_new/PCA_file/{case}_PC.nc', 'w') as f:
+with nc.Dataset(f'/home/b11209013/2024_Research/MPAS/GrowthRate/PCA_file/{case}_PC.nc', 'w') as f:
     f.createDimension('lon', llon)
     f.createDimension('lat', llat)
     f.createDimension('time', ltime)
@@ -109,3 +121,11 @@ with nc.Dataset(f'/home/b11209013/2024_Research/MPAS/LRF/LRF_new/PCA_file/{case}
     q1pc2_var = f.createVariable('q1pc2', 'f4', ('time', 'lat', 'lon'))
     q1pc2_var[:] = q1pc2
     q1pc2_var.units = 'K/day'
+
+    qvpc1_var = f.createVariable('qvpc1', 'f4', ('time', 'lat', 'lon'))
+    qvpc1_var[:] = qvpc1
+    qvpc1_var.units = 'g/kg'
+
+    qvpc2_var = f.createVariable('qvpc2', 'f4', ('time', 'lat', 'lon'))
+    qvpc2_var[:] = qvpc2
+    qvpc2_var.units = 'g/kg'
