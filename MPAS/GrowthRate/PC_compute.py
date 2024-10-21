@@ -17,7 +17,7 @@ def normal_equation(eof: np.ndarray, data:np.ndarray) -> np.ndarray:
 
 # ===================== #
 # load data
-case = 'CNTL'
+case = 'NSC'
 
 with nc.Dataset(f'/work/b11209013/MPAS/merged_data/{case}/theta.nc', 'r', mmap=True) as f:
     lon  = f.variables['lon'][:]
