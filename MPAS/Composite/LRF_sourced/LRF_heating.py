@@ -109,11 +109,11 @@ eof1: np.ndarray = eof['EOF'][:, 0]
 eof2: np.ndarray = eof['EOF'][:, 1]
 
 # load LRF file
-lrf = jl.load(f'/home/b11209013/2024_Research/MPAS/LRF/LRF_compute/LRF_file/{case}_lrf.joblib')
+lrf = jl.load(f'/home/b11209013/2024_Research/MPAS/LRF/LRF_compute/LRF_file/lrf_{case}.joblib')
 
-lw  = np.where(np.isnan(lrf['lw'])==True, 0, lrf['lw'])
-sw  = np.where(np.isnan(lrf['sw'])==True, 0, lrf['sw'])
-cu  = np.where(np.isnan(lrf['cu'])==True, 0, lrf['cu'])
+lw  = np.where(np.isnan(lrf['lw_lrf'])==True, 0, lrf['lw_lrf'])
+sw  = np.where(np.isnan(lrf['sw_lrf'])==True, 0, lrf['sw_lrf'])
+cu  = np.where(np.isnan(lrf['cu_lrf'])==True, 0, lrf['cu_lrf'])
 
 # load reference longitude and time for compositing
 ref = np.load(f'/home/b11209013/2024_Research/MPAS/Composite/Q1_event_sel/{case}.npy')

@@ -100,9 +100,11 @@ plt.scatter(lon[260], time[299], color='g', s=10)
 plt.scatter(lon[80], time[272], color='g', s=10)
 plt.scatter(lon[260], time[340], color='g', s=10)
 
-
-plt.title('Reconstructed Q1')
+plt.xlabel('Longitude')
+plt.ylabel('Time')
+plt.title('NCRF Reconstructed Q1')
 plt.colorbar(c)
+plt.savefig('NCRF_Q1_recon.png')
 plt.show()
 
 

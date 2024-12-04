@@ -95,8 +95,11 @@ plt.scatter(lon[300], time[80], color='g', s=10)
 plt.scatter(lon[140], time[20], color='g', s=10)
 plt.scatter(lon[154], time[323], color='g', s=10)
 plt.scatter(lon[140], time[351], color='g', s=10)
-plt.title('Reconstructed Q1')
+plt.xlabel('Longitude')
+plt.ylabel('Time')
+plt.title('CNTL Reconstructed Q1')
 plt.colorbar(c)
+plt.savefig('CNTL_Q1_recon.png')
 plt.show()
 
 

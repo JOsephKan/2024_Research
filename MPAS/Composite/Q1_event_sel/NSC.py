@@ -98,9 +98,11 @@ plt.scatter(lon[460], time[226], color='g', s=10)
 plt.scatter(lon[600], time[244], color='g', s=10)
 plt.scatter(lon[420], time[318], color='g', s=10)
 
-
-plt.title('Reconstructed Q1')
+plt.xlabel('Longitude')
+plt.ylabel('Time')
+plt.title('NSC Reconstructed Q1')
 plt.colorbar(c)
+plt.savefig('NSC_Q1_recon.png')
 plt.show()
 
 
