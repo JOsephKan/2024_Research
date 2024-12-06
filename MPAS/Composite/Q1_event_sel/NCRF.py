@@ -104,7 +104,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Time')
 plt.title('NCRF Reconstructed Q1')
 plt.colorbar(c)
-plt.savefig('NCRF_Q1_recon.png')
+plt.savefig('sel_image/NCRF_Q1_recon.png')
 plt.show()
 
 
@@ -114,4 +114,4 @@ time_ref = np.array([16, 36, 36, 64, 110, 142, 135, 235, 242, 297, 299, 272, 340
 
 output_list = [lon_ref, time_ref]
 
-np.save('NCRF.npy', output_list)
+np.save('Q1_sel/NCRF.npy', output_list)

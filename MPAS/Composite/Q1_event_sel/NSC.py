@@ -102,7 +102,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Time')
 plt.title('NSC Reconstructed Q1')
 plt.colorbar(c)
-plt.savefig('NSC_Q1_recon.png')
+plt.savefig('sel_image/NSC_Q1_recon.png')
 plt.show()
 
 
@@ -112,4 +112,4 @@ time_ref = np.array([16, 20, 99, 83, 130, 113, 96, 181, 226, 244, 318]).astype(i
 
 output_list = [lon_ref, time_ref]
 
-np.save('NSC.npy', output_list)
+np.save('Q1_sel/NSC.npy', output_list)

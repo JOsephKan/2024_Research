@@ -99,7 +99,7 @@ plt.xlabel('Longitude')
 plt.ylabel('Time')
 plt.title('CNTL Reconstructed Q1')
 plt.colorbar(c)
-plt.savefig('CNTL_Q1_recon.png')
+plt.savefig('sel_image/CNTL_Q1_recon.png')
 plt.show()
 
 
@@ -109,4 +109,4 @@ time_ref = np.array([16, 220, 341, 153, 45, 80, 20, 323, 351]).astype(int)
 
 output_list = [lon_ref, time_ref]
 
-np.save('CNTL.npy', output_list)
+np.save('Q1_sel/CNTL.npy', output_list)

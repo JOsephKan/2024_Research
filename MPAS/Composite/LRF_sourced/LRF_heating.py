@@ -73,7 +73,7 @@ def mask(wnm, frm):
 case = sys.argv[1]
 
 # variable list
-var_list = ['t', 'qv']
+var_list = ['t', 'qv', 'q1']
 
 # path
 fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.joblib'
@@ -114,6 +114,7 @@ lrf = jl.load(f'/home/b11209013/2024_Research/MPAS/LRF/LRF_compute/LRF_file/lrf_
 lw  = np.where(np.isnan(lrf['lw_lrf'])==True, 0, lrf['lw_lrf'])
 sw  = np.where(np.isnan(lrf['sw_lrf'])==True, 0, lrf['sw_lrf'])
 cu  = np.where(np.isnan(lrf['cu_lrf'])==True, 0, lrf['cu_lrf'])
+tot = np.where(np.isnan(lrf['tot_lrf'])==True, 0, lrf['tot_lrf'])
 
 # load reference longitude and time for compositing
 ref = np.load(f'/home/b11209013/2024_Research/MPAS/Composite/Q1_event_sel/{case}.npy')
@@ -178,19 +179,28 @@ data_sel: dict[str, dict[str, np.ndarray]] = {
     }
     for pc in ['pc1', 'pc2']
 }
+
+plt.plot(time_ticks, data_sel['pc1']['t'])
+plt.plot(time_ticks, data_sel['pc2']['t'])
+
 # %% 
 # Generate heating profile from LRF
 # 1. construct vertical profile of t and qv
 vert_prof: dict[str, dict[str, np.ndarray]] = {
     'pc1': {
         var: np.matrix(eof1).T @ np.matrix(data_sel['pc1'][var])
-        for var in ['t', 'qv']
+        for var in ['t', 'qv', 'q1']
     },
     'pc2': {
         var: np.matrix(eof2).T @ np.matrix(data_sel['pc2'][var])
-        for var in ['t', 'qv']
+        for var in ['t', 'qv', 'q1']
     }
 }
+
+plt.contourf(time_ticks, lev, vert_prof['pc1']['t'] + vert_prof['pc2']['t'])
+plt.gca().invert_xaxis()
+plt.gca().invert_yaxis()
+plt.colorbar()
 
 # 2. construct state vector
 state_vec: dict[str, np.ndarray] = {
@@ -203,7 +213,8 @@ heating: dict[str, dict[str, np.ndarray]] = {
     pc: {
         'lw': lw @ state_vec[pc],
         'sw': sw @ state_vec[pc],
-        'cu': cu @ state_vec[pc]
+        'cu': cu @ state_vec[pc],
+        'tot': tot @ state_vec[pc]
     }
     for pc in ['pc1', 'pc2']
 }

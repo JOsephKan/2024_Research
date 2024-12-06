@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 # %% section 2: load data
 # Load LRF-generated heating profile
 ## file name
-fname: str = '/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/LRF_com_heating/NCRF_heating.joblib'
+fname: str = '/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/LRF_com_heating/NCRF_heating_no_filt.joblib'
 
 ## load data
 data = jl.load(fname)
@@ -159,6 +159,6 @@ ax1.set_title(f'Case: NCRF (LRF)\n\
 Upper: Total Heating (Shading); Composite Temperature (Black Contour), Moisture (Green Contour)\n\
 Lower: Column-integrated Temperature (k), LW (royalblue), SW (sienna), CU (forestgreen)',
 fontsize=10, loc='left')
-plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/heating_image/NCRF_heating.png', dpi=300)
+plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/heating_image/NCRF_heating_no_filt.png', dpi=300)
 
 # %%

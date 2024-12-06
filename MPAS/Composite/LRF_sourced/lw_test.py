@@ -19,7 +19,7 @@ import DataProcess as dp    #type: ignore
 import SignalProcess as sp  #type: ignore
 
 ## accept the system parameter
-case = 'CNTL'
+case = 'NCRF'
 
 # %% ================== Part 0: Define functions ==================== #
 # Functions
@@ -199,36 +199,6 @@ lw_1st = np.matmul(eof1, data_sel['pc1']['lw'])
 lw_2nd = np.matmul(eof2, data_sel['pc2']['lw'])
 lw_tot = lw_1st + lw_2nd
 
-sw_1st = np.matmul(eof1, data_sel['pc1']['sw'])
-sw_2nd = np.matmul(eof2, data_sel['pc2']['sw'])
-sw_tot = sw_1st + sw_2nd
-
-cu_1st = np.matmul(eof1, data_sel['pc1']['cu'])
-cu_2nd = np.matmul(eof2, data_sel['pc2']['cu'])
-cu_tot = cu_1st + cu_2nd
-
-heating_sum = lw_tot + sw_tot + cu_tot
-
-t_mean = np.sum(
-    np.multiply(((t_tot[1:]+t_tot[:-1])/2), (np.diff(lev)[..., None])*100),
-    axis=0
-) / np.sum(np.diff(lev)*100)
-
-lw_mean = np.sum(
-    np.multiply((lw_tot[1:]+lw_tot[:-1])/2, np.diff(lev)[:, None]*100),
-    axis=0
-) / np.sum(np.diff(lev)*100, axis=0)
-
-sw_mean = np.sum(
-    np.multiply((sw_tot[1:]+sw_tot[:-1])/2, np.diff(lev)[:, None]*100),
-    axis=0
-) / np.sum(np.diff(lev)*100, axis=0)
-
-cu_mean = np.sum(
-    np.multiply((cu_tot[1:]+cu_tot[:-1])/2, np.diff(lev)[:, None]*100),
-    axis=0
-) / np.sum(np.diff(lev)*100, axis=0)
-
 
 # %%
 plt.rcParams.update({
@@ -238,88 +208,13 @@ plt.rcParams.update({
     'axes.labelsize': 14,
     'font.family': 'serif',
 })
+crlw = plt.contourf(time_ticks, lev, lw_tot, cmap='coolwarm', norm=TwoSlopeNorm(vcenter=0))
+ct = plt.contour(time_ticks, lev, t_tot, colors='black', levels=[-1.25, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.25])
+cqv = plt.contour(time_ticks, lev, q_tot, colors='green', levels=[-0.4, -0.3, -0.2,  0.2, 0.3, 0.4])
+plt.gca().invert_xaxis()
+plt.gca().invert_yaxis()
+plt.clabel(ct, inline=True, fontsize=10)
+plt.clabel(cqv, inline=True, fontsize=10)
+plt.colorbar(crlw)
 
-fig = plt.figure(figsize=(11, 6))
-gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
-
-# First subplot with contourf
-ax1 = plt.subplot(gs[0])
-cr1 = ax1.contourf(
-    time_ticks, lev[:-2], heating_sum[:-2],
-    cmap='RdBu_r',
-    levels=np.linspace(-6, 8, 29),
-    extend='both',
-    norm=TwoSlopeNorm(vcenter=0),
-)
-c1 = ax1.contour(
-    time_ticks, lev[:-2], t_tot[:-2],
-    colors='k',
-    linewidths=1,
-    levels=[-1.25, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.25]
-)
-crqv = plt.contour(
-    time_ticks, lev[:-2], q_tot[:-2],
-    levels=[-0.4, -0.3, -0.2,  0.2, 0.3, 0.4],
-    colors='forestgreen', linewidths=1)
-plt.gca().spines['right'].set_visible(False)
-plt.gca().spines['top'].set_visible(False)
-plt.yscale('log')
-ax1.set_yticks(np.linspace(100, 1000, 10), np.linspace(100, 1000, 10).astype(int))
-ax1.set_xlim(4, -4)
-ax1.set_ylim(1000, 100)
-ax1.set_ylabel("Level [hPa]")
-plt.clabel(c1, inline=True, fontsize=8)
-
-# Second subplot with line plot
-ax2 = plt.subplot(gs[1], sharex=ax1)
-ax2.plot(
-    time_ticks, lw_mean,
-    color='royalblue',
-    label='LW'
-)
-ax2.plot(
-    time_ticks, sw_mean,
-    color='sienna',
-    label='SW'
-)
-ax2.plot(
-    time_ticks, cu_mean,
-    color='forestgreen',
-    label='Cu'
-)
-plt.gca().spines['right'].set_visible(False)
-plt.gca().spines['top'].set_visible(False)
-ax2.set_xlim(4, -4)
-ax2.set_ylim(-4, 5)
-ax2.set_xticks(np.linspace(4, -4, 9))
-ax2.set_yticks([-3, -1.5, 0, 1.5, 3])
-ax2.set_ylabel('K/day')
-
-cax = inset_axes(ax1, width="1.5%", height="80%", loc="center right", bbox_to_anchor=(0.04, 0, 1, 1), bbox_transform=ax1.transAxes, borderpad=0)
-
-
-ax3 = ax2.twinx()
-ax3.plot(
-    time_ticks, t_mean,  # Plot data along the first row as an example
-    color='k', 
-    label='T'
-)
-plt.gca().spines['top'].set_visible(False)
-ax3.set_ylabel('K')
-ax3.set_ylim(-0.34, 0.34)
-ax3.set_yticks(np.linspace(-0.4, 0.4, 5))
-
-plt.text(2.3, -0.8, 'Day After')
-plt.text(-1.7, -0.8, 'Day Before')
-
-cbar = fig.colorbar(
-    cr1, cax=cax, ax=[ax1, ax2], location="right",  label="K/day")
-cbar.set_ticks([-6, -4, -2, 0, 2, 4, 6, 8])
-
-ax1.set_title(f'Case: {case}\n\
-Upper: Total Heating (Shading); Composite Temperature (Black Contour), Moisture (Green Contour)\n\
-Lower: Column-integrated Temperature (k), LW (royalblue), SW (sienna), CU (forestgreen)',
-fontsize=10, loc='left')
-plt.savefig(f'{case}_MPAS_comp.png', dpi=300)
-plt.show()
 # %%
