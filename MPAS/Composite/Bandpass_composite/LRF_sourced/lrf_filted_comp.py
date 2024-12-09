@@ -3,6 +3,7 @@
 ## import package
 from math import exp
 import os
+from resource import struct_rusage
 import sys
 import numpy as np
 import joblib as jl
@@ -96,10 +97,11 @@ def mask(wnm, frm):
     return np.where(is_in_positive_region | is_in_negative_region, 1, 0)
 
 # %% section 2: Load data
+# %% section 2
 # load data
 # case name
 #case = sys.argv[1]
-case='NSC'
+case='CNTL'
 # path
 fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.joblib'
 
@@ -191,11 +193,26 @@ state_vector: dict[str, np.ndarray] = {
     'pc1': np.concatenate([
         eof1[:, None] @ reconstruct['pc1']['t'].flatten()[None, :],
         eof1[:, None] @ reconstruct['pc1']['qv'].flatten()[None, :]
-    ], axis=0).reshape(76, ltime, llon),
+    ], axis=0),
     'pc2': np.concatenate([
         eof2[:, None] @ reconstruct['pc2']['t'].flatten()[None, :],
         eof2[:, None] @ reconstruct['pc2']['qv'].flatten()[None,:]
-    ], axis=0).reshape(76, ltime, llon)
+    ], axis=0)
+}
+
+heating: dict[str, dict[str, np.ndarray]] = {
+    'pc1': {
+        'lw' : (lw @ state_vector['pc1'] ).reshape((len(lev), ltime, llon)),
+        'sw' : (sw @ state_vector['pc1'] ).reshape((len(lev), ltime, llon)),
+        'cu' : (cu @ state_vector['pc1'] ).reshape((len(lev), ltime, llon)),
+        'tot': (tot @ state_vector['pc1']).reshape((len(lev), ltime, llon))
+    },
+    'pc2': {
+        'lw' : (lw @ state_vector['pc2'] ).reshape((len(lev), ltime, llon)),
+        'sw' : (sw @ state_vector['pc2'] ).reshape((len(lev), ltime, llon)),
+        'cu' : (cu @ state_vector['pc2'] ).reshape((len(lev), ltime, llon)),
+        'tot': (tot @ state_vector['pc2']).reshape((len(lev), ltime, llon))
+    }
 }
 
 # %% section 4: Composite
@@ -208,42 +225,32 @@ time_itv = [
 time_ticks = np.linspace(-4, 4, 33)
 
 ## 4.2 composite
-state_vector_sel: dict[str, np.ndarray] = {
-    'pc1': np.array([
-        state_vector['pc1'][:, time_itv[i], lon_ref[i]]
-        for i in range(time_ref.size)
-    ]).mean(axis=0),
-    'pc2': np.array([
-        state_vector['pc2'][:, time_itv[i], lon_ref[i]]
-        for i in range(time_ref.size)
-    ]).mean(axis=0)
-}
-print(state_vector_sel['pc1'])
-## 4.3 compute the heating
-heating: dict[str, dict[str, np.ndarray]] = {
-    pc: {
-        'lw' : np.array(lw)  @ state_vector_sel[pc],
-        'sw' : np.array(sw)  @ state_vector_sel[pc],
-        'cu' : np.array(cu)  @ state_vector_sel[pc],
-        'tot': np.array(tot) @ state_vector_sel[pc]
+data_sel: dict[str, np.ndarray] = {
+    pc:{
+        np.array([
+            heating[pc][key][lev, time_itv[i], lon_ref[i]]
+            for i in range(time_ref.size)
+        ])
+        for key in heating[pc].keys()
     }
-    for pc in state_vector.keys()
+    for pc in heating.keys()
 }
+print(data_sel['pc1'].keys())
+## 4.3 construct state vector
+state_vec: np.ndarray = np.concatenate([data_sel['t'], data_sel['qv']], axis=0)
 
-heating_sum: dict[str, np.ndarray] = {
-    't'  : state_vector_sel['pc1'][:38] + state_vector_sel['pc2'][:38],
-    'qv' : state_vector_sel['pc1'][38:] + state_vector_sel['pc2'][38:],
-    'lw' : heating['pc1']['lw'] + heating['pc2']['lw'],
-    'sw' : heating['pc1']['sw'] + heating['pc2']['sw'],
-    'cu' : heating['pc1']['cu'] + heating['pc2']['cu'],
-    'tot': heating['pc1']['tot'] + heating['pc2']['tot']
-}
 
-print(lrf['lw'])
+## 4.4 compute the heating
+data_sel['cu'] = np.array(lrf['cu']) @ state_vec
+data_sel['lw'] = np.array(lrf['lw']) @ state_vec
+data_sel['sw'] = np.array(lrf['sw']) @ state_vec
+
+data_sel['tot'] = data_sel['cu'] + data_sel['lw'] + data_sel['sw']
+
 ## vertical averaged
 data_vint: dict[str, np.ndarray] = {
-    key: vert_int(heating_sum[key], lev)
-    for key in heating_sum.keys()
+    key: vert_int(data_sel[key], dims['lev'])
+    for key in data_sel.keys()
 }
 
 # %% section 5: Plot
@@ -256,7 +263,7 @@ plt.rcParams.update({
     'font.family': 'serif',
 })
 
-lev_cond = np.argmin(np.abs(lev - 200))
+lev_cond = np.argmin(np.abs(dims['lev'] - 200))
 
 ## 5.2 plot
 fig = plt.figure(figsize=(12, 7))
@@ -265,20 +272,20 @@ gs  = gridspec.GridSpec(2, 1, height_ratios=[4, 1])
 # First subplot with contourf
 ax1 = plt.subplot(gs[0])
 cr1 = ax1.contourf(
-    time_ticks, lev[:lev_cond+1], heating_sum['tot'][:lev_cond+1],
+    time_ticks, dims['lev'][:lev_cond+1], data_sel['tot'][:lev_cond+1],
     cmap='RdBu_r',
     levels=np.linspace(-6, 10),
     extend='both',
     norm=TwoSlopeNorm(vcenter=0),
 )
 c1 = ax1.contour(
-    time_ticks, lev[:lev_cond+1], heating_sum['t'][:lev_cond+1],
+    time_ticks, dims['lev'][:lev_cond+1], data_sel['t'][:lev_cond+1],
     colors='k',
     linewidths=1,
     levels=[-1.25, -1, -0.75, -0.5, -0.25, 0.25, 0.5, 0.75, 1, 1.25]
 )
 crqv = plt.contour(
-    time_ticks, lev[:lev_cond+1], heating_sum['qv'][:lev_cond+1],
+    time_ticks, dims['lev'][:lev_cond+1], data_sel['qv'][:lev_cond+1],
     levels=[-0.4, -0.3, -0.2,  0.2, 0.3, 0.4],
     colors='forestgreen', linewidths=1)
 plt.gca().spines['right'].set_visible(False)
@@ -342,9 +349,9 @@ cbar = fig.colorbar(
     cr1, cax=cax, ax=[ax1, ax2], location="right",  label="K/day")
 cbar.set_ticks([-6, -4, -2, 0, 2, 4, 6, 8, 10])
 
-ax1.set_title(f'Exp: {case}, Heating: LRF, Bandpass Filter: Yes\n\
+ax1.set_title(f'Exp: {exp}, Heating: LRF, Bandpass Filter: No\n\
 Upper: Total Heating (Shading); Composite Temperature (Black Contour), Moisture (Green Contour)\n\
 Lower: Column-integrated Temperature (k), LW (royalblue), SW (sienna), CU (forestgreen), TOT (black, dashed)',
 fontsize=12, loc='left')
-plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/Bandpass_composite/Filtered_comp_image/LRF_sourced/{case}_LRF_comp.png', dpi=300)
+plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/raw_composite/Raw_comp_image/LRF_sourced/{exp}_raw_comp.png', dpi=300)
 # %%
