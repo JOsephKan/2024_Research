@@ -13,7 +13,7 @@ import Theory as th      #type: ignore
 import DataProcess as dp #type: ignore
 
 ## 3. Accept environment variables
-exp: str = 'CNTL'
+exp: str = 'NCRF'
 
 # %% Section 1.5: Functions
 ## 1. Cross spectrum
@@ -91,11 +91,11 @@ def Coherence(data1, data2):
     return Coh2
 
 # %% Section 2: Load Data
-## 1. Load PC data
+## 1. Load heating PC
 ## path of PC file
-path: str = '/work/b11209013/2024_Research/MPAS/PC/'
+path: str = '/home/b11209013/2024_Research/MPAS/LRF_heating/heating_file/'
 
-data = jl.load(path + exp + '_PC.joblib')
+data = jl.load(path + exp + '_heating.joblib')
 
 ## Packed into different dictionaries
 ### Dimension
@@ -108,47 +108,16 @@ dims: dict[str, np.ndarray] ={
 ### Variables
 data: dict[str, dict[str, np.ndarray]] = {
     'pc1': {
-        var: data['pc'][var][0]
-        for var in ['t', 'qv']
+        't' : data['pc1']['t'],
+        'tot': data['pc1']['tot'],
     },
     'pc2': {
-        var: data['pc'][var][1]
-        for var in ['t', 'qv']
-    },
+        't' : data['pc2']['t'],
+        'tot': data['pc2']['tot'],
+    }
 }
-
+    
 ltime, llat, llon = data['pc1']['t'].shape
-
-## 2. Load EOF data
-eof_data = jl.load(path + 'EOF.joblib')
-
-lev : np.ndarray = eof_data['lev']
-eof1: np.ndarray = eof_data['EOF'][:, 0]
-eof2: np.ndarray = eof_data['EOF'][:, 1]
-
-## 3. load lrf file
-lrf = jl.load(f'/home/b11209013/2024_Research/MPAS/LRF_construct/LRF_file/LRF_{exp}.joblib')
-
-tot = np.where(np.isnan(lrf['tot'])==True, 0, lrf['tot'])
-
-## 4. compute the heating
-## construct the state vector
-print(data['pc1']['t'].shape)
-state_vector = {
-    'pc1': np.concatenate([
-        eof1[:, None] @ (data['pc1']['t']).flatten()[None, :],
-        eof1[:, None] @ (data['pc1']['qv']).flatten()[None, :],
-    ], axis=0),
-    'pc2': np.concatenate([
-        eof2[:, None] @ (data['pc2']['t']).flatten()[None, :],
-        eof2[:, None] @ (data['pc2']['qv']).flatten()[None, :],
-    ], axis=0),
-}
-
-# %% Section 2.5: Compute the heating
-data['pc1']['tot'] = (np.linalg.inv(eof1[None, :] @ eof1[:, None]) @ (eof1[None, :] @ (tot @ state_vector['pc1']))).reshape(ltime, llat, llon)
-data['pc2']['tot'] = (np.linalg.inv(eof2[None, :] @ eof2[:, None]) @ (eof2[None, :] @ (tot @ state_vector['pc2']))).reshape(ltime, llat, llon)
-print(data['pc1']['tot'].shape)
 
 # %% Section 3: Processing data
 ## 1. Formatting data
@@ -259,7 +228,7 @@ plt.xlim(-15, 15)
 plt.ylim(0, 0.5)
 plt.xlabel('Zonal Wavenumber')
 plt.ylabel('Frequency [CPD]')
-plt.title(f'{exp} PC1 EAPE Growth Rate')
+plt.title(f'{exp} PC1 Total EAPE Growth Rate')
 cbar1 = plt.colorbar(
     c1,
     aspect=30,
@@ -288,7 +257,7 @@ plt.xlim(-15, 15)
 plt.ylim(0, 0.5)
 plt.xlabel('Zonal Wavenumber')
 plt.ylabel('Frequency [CPD]')
-plt.title(f'{exp} PC2 EAPE Growth Rate')
+plt.title(f'{exp} PC2 Total EAPE Growth Rate')
 cbar2 = plt.colorbar(
     c2,
     aspect=30,

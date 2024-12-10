@@ -5,12 +5,16 @@ import numpy as np
 import joblib as jl
 
 ## 2. experiment name
-exp: str = 'NSC'
+exp: str = 'CNTL'
 
 # %% section 2: 
 # Load data
 ## 1. Load PC data
 data_pc: dict[str, dict[str, np.ndarray]] = jl.load(f'/work/b11209013/2024_Research/MPAS/PC/{exp}_PC.joblib')
+
+lon: np.ndarray = data_pc['lon']
+lat: np.ndarray = data_pc['lat']
+time: np.ndarray = data_pc['time']
 
 pc: dict[str, dict[str, np.ndarray]] = {
     'pc1': {
@@ -44,7 +48,7 @@ tot: np.ndarray = np.where(np.isnan(data_lrf['tot']), 0, data_lrf['tot'])
 ## 1. Constructing vertical profile of temperature and moisture
 data_flat: dict[str, dict[str, np.ndarray]] = {
     pc_: {
-        var: pc[pc_][var].flatten()
+        var: pc[pc_][var].reshape(ltime*llat*llon)
         for var in pc[pc_].keys()
     }
     for pc_ in pc.keys()
@@ -79,14 +83,22 @@ heating: dict[str, np.ndarray] = {
 ## 2. generate heating PC
 heating_pc: dict[str, dict[str, np.ndarray]] = {
     'pc1': {
-        var: np.linalg.inv(eof1[None, :] @ eof1[:, None]) @ (eof1[None, :] @ heating[var])
+        var: (np.linalg.inv(eof1[None, :] @ eof1[:, None]) @ (eof1[None, :] @ heating[var])).reshape(ltime, llat, llon)
         for var in heating.keys()
     },
     'pc2': {
-        var: np.linalg.inv(eof2[None, :] @ eof2[:, None]) @ (eof2[None, :] @ heating[var])
+        var: (np.linalg.inv(eof2[None, :] @ eof2[:, None]) @ (eof2[None, :] @ heating[var])).reshape(ltime, llat, llon)
         for var in heating.keys()
     }
 }
+
+heating_pc['lon'] = lon
+heating_pc['lat'] = lat
+heating_pc['time'] = time
+heating_pc['pc1']['t'] = pc['pc1']['t']
+heating_pc['pc1']['qv'] = pc['pc1']['qv']
+heating_pc['pc2']['t'] = pc['pc2']['t']
+heating_pc['pc2']['qv'] = pc['pc2']['qv']
 
 # %% section 5: save heating profile
 jl.dump(heating_pc, f'/home/b11209013/2024_Research/MPAS/LRF_heating/heating_file/{exp}_heating.joblib')
