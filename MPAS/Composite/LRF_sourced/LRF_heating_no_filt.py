@@ -26,7 +26,7 @@ case = sys.argv[1]
 var_list = ['t', 'qv', 'q1']
 
 # path
-fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.joblib'
+fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.nc'
 
 # load principal component data
 data = jl.load(fname)

@@ -1,64 +1,60 @@
-# This program is to compute EOF of Q1 in MPAS experiments
-# The range for EOF is set to be -5 to 5 degree
-# %% import package
-import sys
+#%%
 import numpy as np
-import joblib as jl
 import netCDF4 as nc
-
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 from matplotlib import pyplot as plt
-from scipy.interpolate import interp1d
 
-sys.path.append('/home/b11209013/Package')
-from SignalProcess import EOF
 
-## imoprt system parameters
-case = 'CNTL'
-
-# %% ================== Part 1: load data ==================== #
-# path for case data
-path: str = f'/work/b11209013/2024_Research/MPAS/merged_data/{case}/'
-
-# load Q1 dataset
-with nc.Dataset(f'{path}q1.nc', 'r') as f:
-    lat : np.ndarray = f.variables['lat'][:]
-    lon : np.ndarray = f.variables['lon'][:]
-    lev : np.ndarray = f.variables['lev'][:]
+# %% load dataset
+with nc.Dataset("/work/b11209013/2024_Research/MPAS/merged_data/CNTL/q1.nc") as f:
+    dims = dict(
+        lon = f.variables['lon'][:],
+        lat = f.variables['lat'][:],
+        lev = f.variables['lev'][:],
+        time = f.variables['time'][:]
+    )
     
-    lat_lim = np.where((lat >= -5) & (lat <= 5))[0]
+    lat_lim = np.where((dims['lat'] >= -5) & (dims['lat'] <= 5))[0]
     
+    dims['lat'] = dims['lat'][lat_lim]
     q1 = f.variables['q1'][:, :, lat_lim, :]
+
+ltime, llev, llat, llon = q1.shape
+
+
+# %% permute and reshape data
+q1_rs = q1.transpose(1, 0, 2, 3).reshape(llev, -1)
+
+scaler = StandardScaler()
+
+data_scaled = ((q1_rs - q1_rs.mean())).T
+
+n_eofs = 10
+
+pca = PCA(n_components = n_eofs)
+
+pca.fit(data_scaled)
+
+eof_modes = pca.components_
+pc_modes = pca.transform(data_scaled)
+exp_var = pca.explained_variance_ratio_
+
+# %% save data
+with nc.Dataset("/work/b11209013/2024_Research/MPAS/PC/EOF.nc", "w") as f:
+    f.createDimension("mode", n_eofs)
+    f.createDimension("lev", llev)
     
-
-
-# %% ================== Part 1.5 : permute and reshape ==================== #
-# permute and reshape variables
-q1_rs = np.reshape(q1.transpose((1, 0, 2, 3)), (lev.size, -1))
-
-# %% =================== Part 2: interpolate ==================== #
-#lev_itp = np.linspace(150, 1000, 18).astype(int)
-#q1_itp = interp1d(lev[::-1], q1_rs[::-1], axis=0, fill_value='extrapolate')(lev_itp)
-q1_itp = q1_rs
-
-# %% ==================== Part 3: EOF =========================== #
-# EOF analysis
-
-q1_ano = (q1_itp - np.mean(q1_itp))
-
-q1_eof = EOF(q1_ano)
-
-exp, eof, pc = q1_eof.EmpOrthFunc()
-
-plt.plot(eof[:, 0], lev)
-plt.plot(eof[:, 1], lev)
-plt.gca().invert_yaxis()
-output_dict = {
-    'lev': lev,
-    'EOF': eof
-}
-# %% ================== Part 4: save data ==================== #
-# path for saving data
-path_save: str = f'/work/b11209013/2024_Research/MPAS/PC/'
-jl.dump(output_dict, f'{path_save}EOF.joblib', compress=3)
-
+    var_eof = f.createVariable("EOF", np.float64, ("mode", "lev"))
+    var_eof.description="EOF modes of CNTL q1"
+    var_eof[:] = eof_modes
+    
+    lev_var = f.createVariable("lev", np.float64, ("lev"))
+    lev_var.description="Levels of EOF modes"
+    lev_var[:] = dims['lev']
+    
+    mode_var = f.createVariable("mode", np.int32, ("mode"))
+    mode_var.description="Mode number"
+    mode_var[:] = np.linspace(1, n_eofs, n_eofs, dtype=int)
 # %%

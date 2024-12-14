@@ -4,7 +4,7 @@
 ## 1. standard package
 import sys
 import numpy as np
-import joblib as jl
+import netCDF4 as nc
 
 import matplotlib.pyplot as plt
 
@@ -35,7 +35,7 @@ def PowerSpectrum(
 
     ps = ps*mask
 
-    return ps
+    return ps.real
 
 # 2. Background
 def backgroud(sym, asy):
@@ -60,15 +60,17 @@ data: dict[str, dict[str, np.ndarray]] = {
 }
 
 for case in cases:
-    file = jl.load(f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.joblib')
+    with nc.Dataset(f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.nc') as f:
+        lat = f['lat'][:]
 
-    lat = file['lat']
-    q1_arr = file['pc']['q1']
-    
-    data['pc1'][case] = q1_arr[0]
-    data['pc2'][case] = q1_arr[1]
+        data['pc1'][case] = f['q1'][0].transpose(2, 1, 0)
+        data['pc2'][case] = f['q1'][1].transpose(2, 1, 0)
+
+
+print(data['pc1']['CNTL'].shape)
 
 ltime, llat, llon = data['pc1']['CNTL'].shape
+
 
 # %% section 4
 # processing data
@@ -138,10 +140,6 @@ sym_ps: dict[str, dict[str, np.ndarray]] = {
     for pc in ['pc1', 'pc2']
 }
 
-plt.contourf(wnm_v, frm_v, np.log(np.fft.fftshift(sym_ps['pc1']['CNTL'])), cmap='jet')
-plt.xlim(-15, 15)
-plt.ylim(0, 0.5)
-plt.colorbar()
 asy_ps: dict[str, dict[str, np.ndarray]] = {
     pc: {
         case: np.array([
@@ -151,6 +149,29 @@ asy_ps: dict[str, dict[str, np.ndarray]] = {
         for case in cases
     }
     for pc in ['pc1', 'pc2']
+}
+
+
+# filtered out
+def pos_cond(cond, data):
+    data_new = np.fft.fftshift(data)[frm_v>0].reshape(-1, llon)
+
+    return data_new
+
+sym_ps = {
+    pc:{
+        case: pos_cond(frm_v>0, sym_ps[pc][case])
+        for case in cases
+    }
+    for pc in ["pc1", "pc2"]
+}
+
+asy_ps = {
+    pc:{
+        case: pos_cond(frm_v>0, asy_ps[pc][case])
+        for case in cases
+    }
+    for pc in ["pc1", "pc2"]
 }
 
 # %%
@@ -163,14 +184,9 @@ bg: dict[str, dict[str, np.ndarray]] = {
     for pc in ['pc1', 'pc2']
 }
 
-plt.contourf(wnm_v, frm_v, np.log(np.fft.fftshift(bg['pc1']['CNTL'])), cmap='jet')
-plt.xlim(-15, 15)
-plt.ylim(0, 0.5)
-plt.colorbar()
-
-sym_peak: dict[str, dict[str, np.ndarray]] = {
+peak: dict[str, dict[str, np.ndarray]] = {
     pc: {
-        case: sym_ps[pc][case] / bg[pc][case]
+        case: sym_ps[pc][case] / bg[pc]["CNTL"]
         for case in cases
     }
     for pc in ['pc1', 'pc2']
@@ -179,16 +195,151 @@ sym_peak: dict[str, dict[str, np.ndarray]] = {
 
 # %% section 6
 # plot the power spectrum
-plt.rcParams["figure.titlesize"] = 20
-plt.rcParams["font.size"] = 12
-plt.rcParams["xtick.labelsize"] = 14
-plt.rcParams["ytick.labelsize"] = 14
-plt.rcParams["axes.labelsize"] = 16
-plt.rcParams["axes.titlesize"] = 18
-plt.rcParams["legend.fontsize"] = 14
+plt.rcParams["figure.titlesize"] = 18
+plt.rcParams["font.size"] = 10
+plt.rcParams["xtick.labelsize"] = 12
+plt.rcParams["ytick.labelsize"] = 12
+plt.rcParams["axes.labelsize"] = 14
+plt.rcParams["axes.titlesize"] = 16
+plt.rcParams["legend.fontsize"] = 12
 plt.rcParams["font.family"] = "serif"
 
-plt.contourf(wnm_v, frm_v, np.fft.fftshift(sym_peak['pc1']['CNTL']), cmap='jet')
-#plt.xlim(-15, 15)
-#plt.ylim(0, 0.5)
-# %%
+wnm = wnm_v[frm_v>0].reshape(-1, llon)
+frm = frm_v[frm_v>0].reshape(-1, llon)
+
+
+fr_ana, wn_ana = th.genDispersionCurves()
+e_cond = np.where(wn_ana[3, 0, :] <=0)
+
+fig, ax = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
+
+c1 = ax[0, 0].contourf(
+    wnm, frm, (peak["pc1"]["CNTL"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[0, 0].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 0].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 0].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[0, 0].set_xticks(np.linspace(-14, 14, 8))
+ax[0, 0].set_yticks(np.linspace(0, 0.5, 6))
+ax[0, 0].set_xlim(-15, 15)
+ax[0, 0].set_ylim(0, 0.5)
+ax[0, 0].set_ylabel("Frequency (CPD)")
+ax[0, 0].set_title("CNTL")
+#cb1 = plt.colorbar(c1, ax=ax[0, 0])
+
+
+c2 = ax[0, 1].contourf(
+    wnm, frm, (peak["pc1"]["NCRF"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[0, 1].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 1].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 1].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[0, 1].set_xticks(np.linspace(-14, 14, 8))
+ax[0, 1].set_yticks(np.linspace(0, 0.5, 6))
+ax[0, 1].set_xlim(-15, 15)
+ax[0, 1].set_ylim(0, 0.5)
+ax[0, 1].set_xlabel("Zonal Wavenumber")
+# ax[0, 1].set_ylabel("Frequency (CPD)")
+ax[0, 1].set_title("NCRF")
+# plt.colorbar(c2, ax=ax[0, 1])
+
+c3 = ax[1, 0].contourf(
+    wnm, frm, (peak["pc1"]["NSC"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[1, 0].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[1, 0].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[1, 0].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[1, 0].set_xticks(np.linspace(-14, 14, 8))
+ax[1, 0].set_yticks(np.linspace(0, 0.5, 6))
+ax[1, 0].set_xlim(-15, 15)
+ax[1, 0].set_ylim(0, 0.5)
+ax[1, 0].set_xlabel("Zonal Wavenumber")
+ax[1, 0].set_ylabel("Frequency (CPD)")
+ax[1, 0].set_title("NSC")
+# plt.colorbar(c3, ax=ax[1, 0])
+
+ax[1, 1].axis("off")
+
+cb = plt.colorbar(c3, ax=ax, label="Normalized Power Spectrum", aspect=40)
+cb.set_ticks(np.linspace(1, 10, 10))
+
+plt.suptitle("PC1 (symmetric) Normalized Power Spectra")
+plt.savefig("/home/b11209013/2024_Research/MPAS/PowerSpec/MPAS_pc1.png", dpi=300)
+plt.show()
+plt.close()
+
+
+fig, ax = plt.subplots(2, 2, figsize=(8, 6), sharex=True, sharey=True)
+
+c1 = ax[0, 0].contourf(
+    wnm, frm, (peak["pc2"]["CNTL"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[0, 0].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 0].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 0].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[0, 0].set_xticks(np.linspace(-14, 14, 8))
+ax[0, 0].set_yticks(np.linspace(0, 0.5, 6))
+ax[0, 0].set_xlim(-15, 15)
+ax[0, 0].set_ylim(0, 0.5)
+ax[0, 0].set_ylabel("Frequency (CPD)")
+ax[0, 0].set_title("CNTL")
+#cb1 = plt.colorbar(c1, ax=ax[0, 0])
+
+
+c2 = ax[0, 1].contourf(
+    wnm, frm, (peak["pc2"]["NCRF"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[0, 1].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 1].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[0, 1].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[0, 1].set_xticks(np.linspace(-14, 14, 8))
+ax[0, 1].set_yticks(np.linspace(0, 0.5, 6))
+ax[0, 1].set_xlim(-15, 15)
+ax[0, 1].set_ylim(0, 0.5)
+ax[0, 1].set_xlabel("Zonal Wavenumber")
+# ax[0, 1].set_ylabel("Frequency (CPD)")
+ax[0, 1].set_title("NCRF")
+# plt.colorbar(c2, ax=ax[0, 1])
+
+c3 = ax[1, 0].contourf(
+    wnm, frm, (peak["pc2"]["NSC"]),
+    levels=np.linspace(1, 10),
+    cmap="terrain_r", extend="max"
+)
+for i in range(3):
+    ax[1, 0].plot(wn_ana[3, i, :][e_cond], fr_ana[3, i, :][e_cond], color="black", linewidth=0.5, linestyle=":")
+    ax[1, 0].plot(wn_ana[4, i, :], fr_ana[4, i, :], color="black", linewidth=0.5, linestyle=":")
+    ax[1, 0].plot(wn_ana[5, i, :], fr_ana[5, i, :], color="black", linewidth=0.5, linestyle=":")
+ax[1, 0].set_xticks(np.linspace(-14, 14, 8))
+ax[1, 0].set_yticks(np.linspace(0, 0.5, 6))
+ax[1, 0].set_xlim(-15, 15)
+ax[1, 0].set_ylim(0, 0.5)
+ax[1, 0].set_xlabel("Zonal Wavenumber")
+ax[1, 0].set_ylabel("Frequency (CPD)")
+ax[1, 0].set_title("NSC")
+# plt.colorbar(c3, ax=ax[1, 0])
+
+ax[1, 1].axis("off")
+
+cb = plt.colorbar(c3, ax=ax, label="Normalized Power Spectrum", aspect=40)
+cb.set_ticks(np.linspace(1, 10, 10))
+
+plt.suptitle("PC2 (symmetric) Normalized Power Spectra")
+plt.savefig("/home/b11209013/2024_Research/MPAS/PowerSpec/MPAS_pc2.png", dpi=300)
+plt.show()
+plt.close()

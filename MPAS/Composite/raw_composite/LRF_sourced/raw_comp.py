@@ -88,6 +88,13 @@ lrf: dict[str, np.ndarray] = {
     for var in lrf_data.keys()
 }
 
+with nc.Dataset(f'/home/b11209013/2024_Research/MPAS/LRF_construct/LRF_file/{exp}.nc', "r") as f:
+    lrf: dict[str, np.ndarray] = {
+        var: np.where(np.isnan(f.variables[var][:]), 0, f.variables[var][:])
+        for var in ["lw", "sw", "cu", "tot"]
+    }
+
+
 # %% section 3: Processing data
 ## 3.1 convert unit
 theta2t = lambda theta: theta*(1000/dims['lev'][None, :, None])**-0.286

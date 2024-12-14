@@ -3,7 +3,6 @@
 import os
 import sys
 import numpy as np
-import joblib as jl
 import netCDF4 as nc
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
@@ -104,5 +103,26 @@ for var in lrf.keys():
 # %% section 7: save data
 save_path = f'/home/b11209013/2024_Research/MPAS/LRF_construct/LRF_file/'
 
-jl.dump(lrf, f'{save_path}LRF_{exp}.joblib', compress = 3)
+with nc.Dataset(f"{save_path}{exp}.nc", "w") as f:
+    f.createDimension("lev_state", llev*2)  
+    f.createDimension("lev_tend", llev)
+  
+    lev_var = f.createVariable("lev", np.float64, ("lev_tend"))
+    lev_var.description="Levels of EOF modes"
+    lev_var[:] = dims['lev']
 
+    lw_var = f.createVariable("lw", np.float64, ("lev_tend", "lev_state"))
+    lw_var.description="LRF for longwave heating"
+    lw_var[:] = lrf['lw']
+
+    sw_var = f.createVariable("sw", np.float64, ("lev_tend", "lev_state"))
+    sw_var.description="LRF for shortwave heating"
+    sw_var[:] = lrf['sw']
+
+    cu_var = f.createVariable("cu", np.float64, ("lev_tend", "lev_state"))
+    cu_var.description="LRF for cumulus heating"
+    cu_var[:] = lrf['cu']
+
+    tot_var = f.createVariable("tot", np.float64, ("lev_tend", "lev_state"))
+    tot_var.description="LRF of total heating"
+    tot_var[:] = lrf['tot']

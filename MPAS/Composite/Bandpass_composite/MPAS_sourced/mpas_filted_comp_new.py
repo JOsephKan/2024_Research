@@ -4,7 +4,6 @@
 import os
 import sys
 import numpy as np
-import joblib as jl
 import netCDF4 as nc
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
@@ -85,50 +84,41 @@ def vert_int(
 # load data
 # case name
 #case = sys.argv[1]
-case='NSC'
+case='CNTL'
 # path
-fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.joblib'
+fname = f'/work/b11209013/2024_Research/MPAS/PC/{case}_PC.nc'
 
 # load principal component data
-data = jl.load(fname)
+with nc.Dataset(fname, 'r') as f:
+    lon  = f['lon'][:]
+    lat  = f['lat'][:]
+    time = f['time'][:]
 
-var_list: list[str] = data['pc'].keys()
-
-lon  = data['lon']
-lat  = data['lat']
-time = data['time']
-pc_data = data['pc']
-
-data: dict[str, dict[str, np.ndarray]] = {
-    'pc1': {
-        var: data['pc'][var][0]
-        for var in var_list
-    },
-    'pc2': {
-        var: data['pc'][var][1]
-        for var in var_list
-    }
-}
+    data = {"pc1": {}, "pc2": {}}
+    for var in ["t", "qv", "q1"]:
+        data["pc1"][var] = f.variables[var][0].transpose(2, 1, 0)
+        data["pc2"][var] = f.variables[var][1].transpose(2, 1, 0)
 
 ltime, llat, llon = data['pc1']['t'].shape
 
 # size of the pc: (time, lat, lon)
 
 # load EOF structure
-eof = jl.load('/work/b11209013/2024_Research/MPAS/PC/EOF.joblib')
 
-lev : np.ndarray = eof['lev']
-eof1: np.ndarray = eof['EOF'][:, 0]
-eof2: np.ndarray = eof['EOF'][:, 1]
+with nc.Dataset('/work/b11209013/2024_Research/MPAS/PC/EOF.nc', 'r') as f:
+    lev = f['lev'][:]
+    eof1 = f['EOF'][0]
+    eof2 = f['EOF'][1]
 
-# load LRF file
-lrf = jl.load(f'/home/b11209013/2024_Research/MPAS/LRF_construct/LRF_file/LRF_{case}.joblib')
 
-lw  = np.where(np.isnan(lrf['lw'])==True , 0, lrf['lw'])
-sw  = np.where(np.isnan(lrf['sw'])==True , 0, lrf['sw'])
-cu  = np.where(np.isnan(lrf['cu'])==True , 0, lrf['cu'])
-tot = np.where(np.isnan(lrf['tot'])==True, 0, lrf['tot'])
+# load LRF filei
+with nc.Dataset(f'/home/b11209013/2024_Research/MPAS/LRF_construct/LRF_file/{case}.nc', 'r') as f:
+    lw  = np.where(np.isnan(f['lw'][:]) == True, 0, f['lw'][:])
+    sw  = np.where(np.isnan(f['sw'][:]) == True, 0, f['sw'][:])
+    cu  = np.where(np.isnan(f['cu'][:]) == True, 0, f['cu'][:])
+    tot = np.where(np.isnan(f['tot'][:]) == True, 0, f['tot'][:])
 
+    
 # load reference longitude and time for compositing
 lon_ref, time_ref = list(
     np.load(f'/home/b11209013/2024_Research/MPAS/Composite/Q1_event_sel/Q1_sel/{case}.npy')
@@ -192,8 +182,8 @@ data_sel: dict[str, dict[str, np.ndarray]] = {
     for pc in ['pc1', 'pc2']
 }
 
-plt.plot(time_ticks, data_sel['pc1']['t'])
-plt.plot(time_ticks, data_sel['pc2']['t'])
+#plt.plot(time_ticks, data_sel['pc1']['t'])
+#plt.plot(time_ticks, data_sel['pc2']['t'])
 
 # %% 
 # Generate heating profile from LRF
@@ -209,10 +199,10 @@ vert_prof: dict[str, dict[str, np.ndarray]] = {
     }
 }
 
-plt.contourf(time_ticks, lev, vert_prof['pc1']['t'] + vert_prof['pc2']['t'])
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
-plt.colorbar()
+#plt.contourf(time_ticks, lev, vert_prof['pc1']['t'] + vert_prof['pc2']['t'])
+#plt.gca().invert_xaxis()
+#plt.gca().invert_yaxis()
+#plt.colorbar()
 
 # 2. construct state vector
 state_vec: dict[str, np.ndarray] = {
@@ -237,7 +227,7 @@ heating['time_tick'] = time_ticks
 
 # %%
 # save file
-jl.dump(heating, f'/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/LRF_com_heating/{case}_heating.joblib')
+#jl.dump(heating, f'/home/b11209013/2024_Research/MPAS/Composite/LRF_sourced/LRF_com_heating/{case}_heating.joblib')
 
 # %% plot
 ## sum of first two PCs
@@ -352,5 +342,5 @@ ax1.set_title(f'Exp: {case}, Heating: MPAS, Bandpass Filter: Yes\n\
 Upper: Total Heating (Shading); Composite Temperature (Black Contour), Moisture (Green Contour)\n\
 Lower: Column-integrated Temperature (k), LW (royalblue), SW (sienna), CU (forestgreen)',
 fontsize=10, loc='left')
-plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/Bandpass_composite/Filtered_comp_image/{case}_MPAS_comp.png', dpi=300)
+plt.savefig(f'/home/b11209013/2024_Research/MPAS/Composite/Bandpass_composite/Filtered_comp_image/{case}_MPAS_comp_new.png', dpi=300)
 plt.show()
