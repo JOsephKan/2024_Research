@@ -70,9 +70,9 @@ var_conv["q1"]       = var_rs["q1"]*86400/1004.5                # unit: K/day
 var_conv["qv"]       = var_rs["qv"]*1000                        # unit: g/kg
 var_conv["t"]        = var_rs["theta"].*theta2t                 # unit: K
 var_conv["rqvcuten"] = var_rs["rqvcuten"]*86400*1000            # unit: g/kg/day
-var_conv["rtcuten"]  = var_rs["rthcuten"] .* theta2t .* 86400   # unit: K/day
-var_conv["rtatenlw"] = var_rs["rthratenlw"] .* theta2t .* 86400 # unit: K/day
-var_conv["rtatensw"] = var_rs["rthratensw"] .* theta2t .* 86400 # unit: K/day
+var_conv["cu"]  = var_rs["rthcuten"] .* theta2t .* 86400   # unit: K/day
+var_conv["lw"] = var_rs["rthratenlw"] .* theta2t .* 86400 # unit: K/day
+var_conv["sw"] = var_rs["rthratensw"] .* theta2t .* 86400 # unit: K/day
 
 ## compute anomlies
 for var in keys(var_conv)
