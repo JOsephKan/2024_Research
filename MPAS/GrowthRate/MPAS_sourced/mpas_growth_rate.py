@@ -252,7 +252,7 @@ def plot_sigma_pc1(var):
         wn_plot, fr_plot[fr_plot > 0],
         np.fft.fftshift(sigma_filted['pc1'][var])[fr_plot > 0],
         levels=np.linspace(-8, 8, 17),
-        cmap="terrain_r",
+        cmap="BrBG_r",
         extend='both'
     )
     for i in range(3):
@@ -298,7 +298,7 @@ def plot_sigma_pc2(var):
         wn_plot, fr_plot[fr_plot > 0],
         np.fft.fftshift(sigma_filted['pc2'][var])[fr_plot > 0],
         levels=np.linspace(-2.5, 2.5, 21),
-        cmap="terrain_r",
+        cmap="BrBG_r",
         extend='both'
     )
     for i in range(3):
@@ -333,7 +333,7 @@ def plot_sigma_pc2(var):
     cb1 = plt.colorbar(
         c1, aspect=30, orientation='horizontal', label=r'$\sigma$ [day$^{-1}$]'
     )
-    cb1.set_ticks(np.linspace(-8, 8, 9))
+    cb1.set_ticks(np.linspace(-2.5, 2.5, 6))
     plt.savefig(f'/home/b11209013/2024_Research/MPAS/GrowthRate/image/{exp}/{exp}_{var}_PC2.png', dpi=300)
 
 
