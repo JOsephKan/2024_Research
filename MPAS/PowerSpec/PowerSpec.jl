@@ -18,7 +18,7 @@ for exp in exp_list
   data[exp] = Dict()
 
   NCDataset(fname, "r") do ds
-    for var in ["theta", "q1"]
+    for var in ["t", "q1"]
       data[exp][var] = variable(ds, var) # shape: (time, lat, lon, mode)
     end
   end
@@ -29,4 +29,4 @@ NCDataset("/work/b11209013/2024_Research/MPAS/PC/EOF.nc", "r") do ds
   lev = variable(ds, "lev")
 end
 
-
+println("Data shape: ", data["CNTL"]["t"][:])

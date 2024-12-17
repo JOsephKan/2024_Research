@@ -45,8 +45,8 @@ time_ticks = np.linspace(-4, 4, 33)
 
 # compute anomaly
 data_ano = dict(
-    lw = data["rthratenlw"] - data["rthratenlw"].mean(),
-    sw = data["rthratensw"] - data["rthratensw"].mean()
+    lw = data["rthratenlw"] - data["rthratenlw"].mean(axis=(0, 2))[None, :, None],
+    sw = data["rthratensw"] - data["rthratensw"].mean(axis=(0, 2))[None, :, None]
 )
 
 # Filter out the selected data
@@ -116,6 +116,30 @@ plt.text(2.3, 1200, 'Day After')
 plt.text(-1.7, 1200, 'Day Before')
 plt.colorbar()
 plt.savefig("/home/b11209013/2024_Research/MPAS/Composite/raw_composite/Raw_comp_image/MPAS_sourced/CNTL_sw_raw_comp.png", dpi=300)
+plt.show()
+
+plt.figure(figsize=(12, 7))
+plt.contourf(
+    time_ticks, dims['lev'][:lev_cond+1],
+    data_sel['lw'][:lev_cond+1] + data_sel['sw'][:lev_cond+1],
+    cmap="RdBu_r",
+    levels=np.linspace(-4, 4, 17),
+    extend="both",
+    norm=TwoSlopeNorm(vcenter=0),
+)
+plt.gca().spines['right'].set_visible(False)
+plt.gca().spines['top'].set_visible(False)
+plt.yscale('log')
+plt.yticks(np.linspace(100, 1000, 10), np.linspace(100, 1000, 10).astype(int))
+plt.xlim(4, -4)
+plt.ylim(1000, 100)
+plt.xlabel("Relative Time [days]")
+plt.ylabel("Level [hPa]")
+plt.title("MPAS CNTL Composite Radiative heating Profile")
+plt.text(2.3, 1200, 'Day After')
+plt.text(-1.7, 1200, 'Day Before')
+plt.colorbar()
+plt.savefig("/home/b11209013/2024_Research/MPAS/Composite/raw_composite/Raw_comp_image/MPAS_sourced/CNTL_qr_raw_comp.png", dpi=300)
 plt.show()
 
 
