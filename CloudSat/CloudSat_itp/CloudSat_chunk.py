@@ -105,7 +105,7 @@ for a, la in enumerate(lat):
 
         for i in range(len(chunked_data)):
 
-            a = int(a); o = int(o)
+            a = int(a); o = int(o):
             hgt.extend(chunked_data[i]['hgt'][a, o])
             qlw.extend(chunked_data[i]['qlw'][a, o])
             qsw.extend(chunked_data[i]['qsw'][a, o])
