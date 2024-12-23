@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import numpy as np
+import joblib as jl
 import netCDF4 as nc
 
 from matplotlib import pyplot as plt
@@ -18,7 +19,7 @@ import DataProcess as dp    #type: ignore
 import SignalProcess as sp  #type: ignore
 
 ## accept the system parameter
-case = 'NSC'
+case = 'NCRF'
 
 # %% ================== Part 0: Define functions ==================== #
 # Functions
@@ -169,6 +170,20 @@ data_sel: dict[str, dict[str, np.ndarray]] = {
         var: np.matrix([
             reconstruct[pc][var][time_itv[i], lon_ref[i]]
             for i in range(len(time_ref))
+        ])
+        for var in data[pc].keys()
+    }
+    for pc in ['pc1', 'pc2']
+}
+
+jl.dump(data_sel, f"/home/b11209013/2024_Research/MPAS/Composite/Bandpass_composite/Statistical_test/{case}_t_sel.joblib")
+
+
+data_sel: dict[str, dict[str, np.ndarray]] = {
+    pc: {
+        var: np.matrix([
+            reconstruct[pc][var][time_itv[i], lon_ref[i]]
+            for i in range(len(time_ref))
         ]).mean(axis=0)
         for var in data[pc].keys()
     }
@@ -179,7 +194,7 @@ data_sel: dict[str, dict[str, np.ndarray]] = {
 # composite the vertical profile with time ticks
 t_1st  = np.matmul(eof1, data_sel['pc1']['t'])
 t_2nd  = np.matmul(eof2, data_sel['pc2']['t'])
-t_tot = t_1st + t_2nd
+t_tot = np.array(t_1st + t_2nd)
 
 q_1st  = np.matmul(eof1, data_sel['pc1']['qv'])
 q_2nd  = np.matmul(eof2, data_sel['pc2']['qv'])

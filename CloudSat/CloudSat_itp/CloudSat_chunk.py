@@ -15,7 +15,7 @@ date = int(sys.argv[2])
 
 def check_file_exists(filepath):
     if not os.path.exists(filepath):
-#         print(f"Error: File path '{filepath}' does not exist.")
+        print(f"Error: File path '{filepath}' does not exist.")
         sys.exit(1)  # Shut down the script with a non-zero exit code
 
 
@@ -105,7 +105,7 @@ for a, la in enumerate(lat):
 
         for i in range(len(chunked_data)):
 
-            a = int(a); o = int(o):
+            a = int(a); o = int(o)
             hgt.extend(chunked_data[i]['hgt'][a, o])
             qlw.extend(chunked_data[i]['qlw'][a, o])
             qsw.extend(chunked_data[i]['qsw'][a, o])
