@@ -158,11 +158,11 @@ reconstruct: dict[str, dict[str, np.ndarray]] = {
 # %% ================== Part 3: Select data ==================== #
 # setting the compositing interval
 time_itv = [
-    np.linspace(time_ref[i]-16, time_ref[i]+16, 33).astype(int)
+    np.linspace(time_ref[i]-12, time_ref[i]+12, 25).astype(int)
     for i in range(time_ref.size)
 ]
 
-time_ticks = np.linspace(-4, 4, 33)
+time_ticks = np.linspace(-3, 3, 25)
 
 # select data
 data_sel: dict[str, dict[str, np.ndarray]] = {
@@ -274,7 +274,7 @@ plt.gca().spines['right'].set_visible(False)
 plt.gca().spines['top'].set_visible(False)
 plt.yscale('log')
 ax1.set_yticks(np.linspace(100, 1000, 10), np.linspace(100, 1000, 10).astype(int))
-ax1.set_xlim(4, -4)
+ax1.set_xlim(3, -3)
 ax1.set_ylim(1000, 100)
 ax1.set_ylabel("Level [hPa]")
 plt.clabel(c1, inline=True, fontsize=8)
@@ -298,9 +298,9 @@ ax2.plot(
 )
 plt.gca().spines['right'].set_visible(False)
 plt.gca().spines['top'].set_visible(False)
-ax2.set_xlim(4, -4)
+ax2.set_xlim(3, -3)
 ax2.set_ylim(-4, 5)
-ax2.set_xticks(np.linspace(4, -4, 9))
+ax2.set_xticks(np.linspace(3, -3, 7))
 ax2.set_yticks([-3, -1.5, 0, 1.5, 3])
 ax2.set_ylabel('K/day')
 
