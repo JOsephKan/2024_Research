@@ -19,7 +19,7 @@ import DataProcess as dp    #type: ignore
 import SignalProcess as sp  #type: ignore
 
 ## accept the system parameter
-case = 'NCRF'
+case = 'CNTL'
 
 # %% ================== Part 0: Define functions ==================== #
 # Functions
